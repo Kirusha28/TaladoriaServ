@@ -19,41 +19,33 @@ router.post('/register', registerUser);
 // Маршрут для входа пользователя
 router.post('/login', loginUser);
 
-// Маршрут для аутентификации через Google
+// Маршрут для начала аутентификации через Google
 router.get(
   '/google',
   passport.authenticate('google', { scope: ['profile', 'email'] }) // Запрашиваем профиль и email
 );
 
-// Маршрут обратного вызова Google
+// Маршрут обратного вызова Google (здесь Passport обрабатывает ответ от Google)
 router.get(
   '/google/callback',
   passport.authenticate('google', { failureRedirect: '/auth/failure', session: false }), // session: false, так как используем JWT
   googleCallback
 );
 
-// Маршрут для аутентификации через Discord
+// Маршрут для начала аутентификации через Discord
 router.get(
   '/discord',
   passport.authenticate('discord', { scope: ['identify', 'email'] }) // Запрашиваем идентификатор и email
 );
 
-// Маршрут обратного вызова Discord
+// Маршрут обратного вызова Discord (здесь Passport обрабатывает ответ от Discord)
 router.get(
   '/discord/callback',
   passport.authenticate('discord', { failureRedirect: '/auth/failure', session: false }), // session: false, так как используем JWT
   discordCallback
 );
 
-// Пример маршрутов для перенаправления после OAuth
-// В реальном приложении это будут маршруты на вашем фронтенде
-router.get('/auth/success', (req, res) => {
-  res.send(`<h1>Аутентификация успешна!</h1><p>Ваш токен: ${req.query.token}</p><p>Сохраните этот токен и используйте его для доступа к защищенным маршрутам.</p>`);
-});
-
-router.get('/auth/failure', (req, res) => {
-  res.status(401).send('<h1>Аутентификация не удалась :(</h1><p>Пожалуйста, попробуйте еще раз.</p>');
-});
-
+// **Важно:** Маршруты /auth/success и /auth/failure были удалены,
+// так как теперь бэкенд перенаправляет напрямую на клиентское приложение.
 
 module.exports = router; // Экспортируем маршрутизатор
