@@ -12,9 +12,9 @@ const fs = require('fs');
 const path = require('path'); // Для работы с путями
 
 // Импортируем маршруты
+
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const notificationRoutes = require('./routes/notifications');
 
 // Загружаем переменные окружения
 dotenv.config();
@@ -30,9 +30,9 @@ app.use(cors()); // Включаем CORS для всех маршрутов
 app.use(passport.initialize()); // Инициализируем Passport
 
 // Маршруты API
+console.log('Подключаю маршруты авторизации...');
 app.use('/api/auth', authRoutes); // Маршруты аутентификации
 app.use('/api/users', userRoutes); // Маршруты пользователя
-app.use('/api/notifications', notificationRoutes); // Маршруты уведомлений
 
 // Маршрут по умолчанию
 app.get('/', (req, res) => {
@@ -40,8 +40,8 @@ app.get('/', (req, res) => {
 });
 
 // Обработчики ошибок
-app.use(notFound); // Для обработки 404 Not Found
-app.use(errorHandler); // Для обработки всех остальных ошибок
+// app.use(notFound); // Для обработки 404 Not Found
+// app.use(errorHandler); // Для обработки всех остальных ошибок
 
 // Пути к сертификатам
 const privateKeyPath = path.join(__dirname, 'certs', 'key.pem'); // Путь к приватному ключу

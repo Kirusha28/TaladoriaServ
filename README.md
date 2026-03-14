@@ -6,6 +6,3 @@ Node JS server
 Open Ubuntu App
 command for console: sudo service redis start 
 command for console: sudo service redis status
-
-
-

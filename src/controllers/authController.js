@@ -76,18 +76,6 @@ const loginUser = async (req, res, next) => {
   }
 };
 
-// @desc    Обработка обратного вызова Google OAuth
-// @route   GET /api/auth/google/callback
-// @access  Public (обрабатывается Passport.js)
-const googleCallback = async (req, res) => {
-  if (req.user) {
-    // Перенаправляем на главную страницу React-приложения, передавая токен в параметре URL
-    res.redirect(`${FRONTEND_URL}?token=${generateToken(req.user._id)}`);
-  } else {
-    // В случае ошибки перенаправляем на фронтенд с индикатором ошибки
-    res.redirect(`${FRONTEND_URL}?auth_error=true`);
-  }
-};
 
 // @desc    Обработка обратного вызова Discord OAuth
 // @route   GET /api/auth/discord/callback
@@ -105,6 +93,5 @@ const discordCallback = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
-  googleCallback,
   discordCallback,
 };

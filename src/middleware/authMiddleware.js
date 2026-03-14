@@ -20,9 +20,17 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Несанкционированный доступ, пользователь не найден' });
       }
       next(); // Переходим к следующему промежуточному ПО или обработчику маршрута
+      // Измените ваш блок catch в authMiddleware.js
     } catch (error) {
-      console.error(error);
-      return res.status(401).json({ message: 'Несанкционированный доступ, токен недействителен' });
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'Срок действия сессии истек. Войдите заново.' });
+      }
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ message: 'Неверный токен.' });
+      }
+      
+      console.error(error); // Оставляем для других неизвестных ошибок
+      return res.status(401).json({ message: 'Несанкционированный доступ' });
     }
   }
 
