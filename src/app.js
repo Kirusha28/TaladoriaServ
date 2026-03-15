@@ -37,7 +37,7 @@ app.use('/api/users', userRoutes); // Маршруты пользователя
 app.use('/api/global', globalRoutes); // Маршруты пользователя
 
 // Маршрут по умолчанию
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
   res.send('API работает...');
 });
 
