@@ -13,7 +13,24 @@ const getUserProfile = async (req, res) => {
     res.status(404).json({ message: 'Пользователь не найден' });
   }
 };
+const getUserWithAchievements = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    // console.log('user',user_id)
+    const stats = await User.getUserWithAchievements(user_id);
+    
+    if (stats) {
+      res.json(stats); 
+    } else {
+      res.status(500).json({ message: 'Я не математик' });
+    }
+  } catch (error) {
+     res.status(500).json({ message: 'Я не могу понять' });
+  }
+  
+};
 
 module.exports = {
   getUserProfile,
+  getUserWithAchievements
 };

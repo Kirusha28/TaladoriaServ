@@ -44,13 +44,13 @@ router.get('/discord/callback', (req, res, next) => {
     try {
       // Подписываем токен. 
       // ВАЖНО: используем user.id (из нашей MySQL модели)
-      console.log("JWT Token Creating:");
+      // console.log("JWT Token Creating:");
       const token = jwt.sign(
         { user_id: user.user_id }, 
         process.env.JWT_SECRET, 
         { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
       );
-      console.log("JWT Token:", token);
+      // console.log("JWT Token:", token);
       // Отправляем данные
       // Вы можете либо отправить JSON, либо сделать редирект на фронтенд с токеном
       res.json({

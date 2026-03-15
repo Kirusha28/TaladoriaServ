@@ -16,13 +16,7 @@ const getMe = async (req, res) => {
     const user = req.user;
 
     // Проверяем наличие полей (в MySQL они могут называться иначе, например user_id)
-    res.json({
-      id: user.user_id,
-      username: user.username,
-      email: user.email,
-      discordId: user.discordId,
-      createdAt: user.createdAt
-    });
+    res.json(user);
   } catch (error) {
     console.error('Ошибка в getMe:', error);
     res.status(500).json({ message: 'Внутренняя ошибка сервера при получении профиля' });

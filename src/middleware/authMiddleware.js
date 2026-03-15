@@ -13,9 +13,9 @@ const protect = async (req, res, next) => {
             const decoded = jwt.verify(token, jwtConfig.secret);
             
             // Проверяем, что именно лежит в токене (id или user_id)
-            console.log('decoded:', decoded);
+            // console.log('decoded:', decoded);
             const userId = decoded.user_id;
-            console.log('userId:', userId);
+            // console.log('userId:', userId);
             if (!userId) {
               console.error('ID не найден в полезной нагрузке токена:', decoded);
               return res.status(401).json({ message: 'Неверная структура токена' });
