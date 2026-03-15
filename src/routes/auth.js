@@ -31,7 +31,7 @@ router.get('/discord/callback', (req, res, next) => {
   // Вызываем кастомный обработчик passport
   passport.authenticate('discord', { session: false }, (err, user, info) => {
     if (err) {
-      return res.status(500).json({ message: "Внутренняя ошибка сервера" });
+      return res.status(500).json({ message: "Внутренняя ошибка сервера", error: err });
     }
 
     // Если стратегия вернула false (пользователь не найден)
