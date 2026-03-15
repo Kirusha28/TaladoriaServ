@@ -1,43 +1,55 @@
-const jwt = require('jsonwebtoken'); // Импортируем jsonwebtoken
-const User = require('../models/User'); // Импортируем модель User
-const jwtConfig = require('../config/jwt'); // Импортируем конфигурацию JWT
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const jwtConfig = require('../config/jwt');
 
 const protect = async (req, res, next) => {
-  let token;
+    let token;
 
-  // Проверяем, есть ли токен в заголовках авторизации
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      // Извлекаем токен из заголовка "Bearer <token>"
-      token = req.headers.authorization.split(' ')[1];
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
 
-      // Проверяем токен
-      const decoded = jwt.verify(token, jwtConfig.secret);
+            // 1. Декодируем токен
+            const decoded = jwt.verify(token, jwtConfig.secret);
+            
+            // Проверяем, что именно лежит в токене (id или user_id)
+            console.log('decoded:', decoded);
+            const userId = decoded.user_id;
+            console.log('userId:', userId);
+            if (!userId) {
+              console.error('ID не найден в полезной нагрузке токена:', decoded);
+              return res.status(401).json({ message: 'Неверная структура токена' });
+            }
+            // 2. Ищем пользователя
+            const userResult = await User.findByDiscordId(userId);
 
-      // Находим пользователя по ID из токена и прикрепляем его к объекту запроса
-      req.user = await User.findById(decoded.id).select('-password'); // Исключаем пароль
-      if (!req.user) {
-        return res.status(401).json({ message: 'Несанкционированный доступ, пользователь не найден' });
-      }
-      next(); // Переходим к следующему промежуточному ПО или обработчику маршрута
-      // Измените ваш блок catch в authMiddleware.js
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({ message: 'Срок действия сессии истек. Войдите заново.' });
-      }
-      if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({ message: 'Неверный токен.' });
-      }
-      
-      console.error(error); // Оставляем для других неизвестных ошибок
-      return res.status(401).json({ message: 'Несанкционированный доступ' });
+            // 3. MySQL возвращает данные по-разному в зависимости от драйвера.
+            // Если это массив строк, берем первую. Если объект — берем его.
+            const user = Array.isArray(userResult) ? userResult[0] : userResult;
+
+            if (!user) {
+                return res.status(401).json({ message: 'Несанкционированный доступ, пользователь не найден в БД' });
+            }
+
+            // 4. ПРИКРЕПЛЯЕМ К ЗАПРОСУ
+            // Убеждаемся, что мы не передаем пароль (если он есть)
+            const { password, ...userWithoutPassword } = user;
+            req.user = userWithoutPassword;
+
+            return next(); // Обязательно выходим из мидлвара через return
+            
+        } catch (error) {
+            console.error('JWT Error:', error.message);
+            if (error.name === 'TokenExpiredError') {
+                return res.status(401).json({ message: 'Срок действия токена истек' });
+            }
+            return res.status(401).json({ message: 'Неверный токен' });
+        }
     }
-  }
 
-  // Если токен не предоставлен
-  if (!token) {
-    return res.status(401).json({ message: 'Несанкционированный доступ, токен отсутствует' });
-  }
+    if (!token) {
+        return res.status(401).json({ message: 'Токен отсутствует' });
+    }
 };
 
-module.exports = { protect }; // Экспортируем промежуточное ПО protect
+module.exports = { protect };

@@ -1,47 +1,31 @@
-const User = require('../models/User'); // Импортируем модель User
-const generateToken = require('../utils/jwt'); // Импортируем утилиту для генерации токенов
+const User = require('../models/User'); // Ваша новая модель на MySQL
+const generateToken = require('../utils/jwt');
 
-// Получаем URL фронтенда из переменных окружения
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'; // Убедитесь, что порт соответствует вашему React-приложению!
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// @desc    Регистрация нового пользователя
-// @route   POST /api/auth/register
-// @access  Public
-const registerUser = async (req, res, next) => {
-  const { username, email, password } = req.body;
-
+// @desc    Получить данные профиля текущего пользователя
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
   try {
-    // Проверяем, что все обязательные поля заполнены
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Пожалуйста, заполните все поля' });
+    // Если мидлвар отработал криво и req.user пустой
+    if (!req.user) {
+      return res.status(401).json({ message: 'Данные пользователя не загружены' });
     }
 
-    // Проверяем, существует ли пользователь с таким email или username
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    const user = req.user;
 
-    if (userExists) {
-      return res.status(400).json({ message: 'Пользователь с таким email или именем пользователя уже существует' });
-    }
-
-    // Создаем нового пользователя
-    const user = await User.create({
-      username,
-      email,
-      password,
+    // Проверяем наличие полей (в MySQL они могут называться иначе, например user_id)
+    res.json({
+      id: user.user_id,
+      username: user.username,
+      email: user.email,
+      discordId: user.discordId,
+      createdAt: user.createdAt
     });
-
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        token: generateToken(user._id), // Генерируем JWT
-      });
-    } else {
-      res.status(400).json({ message: 'Неверные данные пользователя' });
-    }
   } catch (error) {
-    next(error); // Передаем ошибку обработчику ошибок
+    console.error('Ошибка в getMe:', error);
+    res.status(500).json({ message: 'Внутренняя ошибка сервера при получении профиля' });
   }
 };
 
@@ -66,7 +50,7 @@ const loginUser = async (req, res, next) => {
         _id: user._id,
         username: user.username,
         email: user.email,
-        token: generateToken(user._id), // Генерируем JWT
+        token: generateToken(user.user_id), // Генерируем JWT
       });
     } else {
       res.status(401).json({ message: 'Неверный email или пароль' });
@@ -76,22 +60,32 @@ const loginUser = async (req, res, next) => {
   }
 };
 
+// @desc    Discord Callback
+const discordCallback = (req, res, next) => {
+  passport.authenticate('discord', (err, user, info) => {
+    if (err) return next(err);
 
-// @desc    Обработка обратного вызова Discord OAuth
-// @route   GET /api/auth/discord/callback
-// @access  Public (обрабатывается Passport.js)
-const discordCallback = async (req, res) => {
-  if (req.user) {
-    // Перенаправляем на главную страницу React-приложения, передавая токен в параметре URL
-    res.redirect(`${FRONTEND_URL}?token=${generateToken(req.user._id)}`);
-  } else {
-    // В случае ошибки перенаправляем на фронтенд с индикатором ошибки
-    res.redirect(`${FRONTEND_URL}?auth_error=true`);
-  }
+    // Если стратегия вернула false (пользователь не найден)
+    if (!user) {
+      return res.status(404).json({ 
+        message: info && info.message === 'User not found' 
+          ? 'Пользователь не найден в системе. Пожалуйста, зарегистрируйтесь.' 
+          : 'Ошибка авторизации' 
+      });
+    }
+
+    // Если всё ок, логиним пользователя
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      
+      const token = generateToken(user.user_id);
+      res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+    });
+  })(req, res, next);
 };
 
 module.exports = {
-  registerUser,
   loginUser,
   discordCallback,
+  getMe,
 };

@@ -4,18 +4,11 @@ const User = require('../models/User'); // Импортируем модель U
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = async (req, res) => {
-  // req.user устанавливается промежуточным ПО `protect`
-  const user = await User.findById(req.user._id).select('-password'); // Исключаем пароль
+  // Мидлвар protect уже нашел пользователя и положил его в req.user
+  const user = req.user; 
 
   if (user) {
-    res.json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      googleId: user.googleId,
-      discordId: user.discordId,
-      createdAt: user.createdAt,
-    });
+    res.json(user);
   } else {
     res.status(404).json({ message: 'Пользователь не найден' });
   }

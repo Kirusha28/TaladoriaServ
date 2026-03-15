@@ -15,6 +15,7 @@ const path = require('path'); // Для работы с путями
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const globalRoutes = require('./routes/global');
 
 // Загружаем переменные окружения
 dotenv.config();
@@ -33,6 +34,7 @@ app.use(passport.initialize()); // Инициализируем Passport
 console.log('Подключаю маршруты авторизации...');
 app.use('/api/auth', authRoutes); // Маршруты аутентификации
 app.use('/api/users', userRoutes); // Маршруты пользователя
+app.use('/api/global', globalRoutes); // Маршруты пользователя
 
 // Маршрут по умолчанию
 app.get('/', (req, res) => {

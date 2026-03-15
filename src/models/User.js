@@ -1,64 +1,46 @@
-const mongoose = require('mongoose'); // Импортируем Mongoose
-const bcrypt = require('bcryptjs'); // Импортируем bcryptjs для хеширования паролей
+const bcrypt = require('bcryptjs');
+// Импортируйте ваше подключение (которое мы писали ранее)
+const connectDB = require('../config/db'); 
 
-const UserSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: function() {
-      // Email обязателен, если нет Google ID или Discord ID
-      return !this.googleId && !this.discordId;
-    },
-    unique: true,
-    sparse: true, // Позволяет иметь несколько документов с null для email
-    lowercase: true,
-    trim: true,
-  },
-  password: {
-    type: String,
-    required: function() {
-      // Пароль обязателен, если нет Google ID или Discord ID
-      return !this.googleId && !this.discordId;
-    },
-    minlength: [6, 'Пароль должен быть не менее 6 символов'],
-  },
-  googleId: {
-    type: String,
-    unique: true,
-    sparse: true, // Позволяет иметь несколько документов с null для googleId
-  },
-  discordId: {
-    type: String,
-    unique: true,
-    sparse: true, // Позволяет иметь несколько документов с null для discordId
-  },
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-// Предварительная обработка перед сохранением: хеширование пароля
-UserSchema.pre('save', async function (next) {
-  // Если пароль не был изменен или это не новый пользователь, пропускаем хеширование
-  if (!this.isModified('password')) {
-    return next();
+class User {
+  
+  // Метод для поиска пользователя по email
+  static async findByUsername(username) {
+    const db = await connectDB();
+    const [rows] = await db.execute('SELECT * FROM users WHERE username = ?', [username]);
+    return rows[0];
   }
-  // Генерируем соль
-  const salt = await bcrypt.genSalt(10);
-  // Хешируем пароль с солью
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
 
-// Метод для сравнения введенного пароля с хешированным паролем в базе данных
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
+  static async findByDiscordId(user_id) {
+    const db = await connectDB();
+    const [rows] = await db.execute('SELECT * FROM users WHERE user_id = ?', [user_id]);
+    return rows[0];
+  }
 
-module.exports = mongoose.model('User', UserSchema); // Экспортируем модель User
+  static async findByEmailOrUsername(email, username) {
+    const db = await connectDB();
+    const query = 'SELECT * FROM users WHERE email = ? OR username = ? LIMIT 1';
+    const [rows] = await db.execute(query, [email, username]);
+    return rows[0]; // Вернет пользователя или undefined
+  }
+
+  static async updateDiscordData(id, username) {
+    const db = await connectDB();
+    const query = 'UPDATE users SET username = ? WHERE user_id = ?';
+    await db.execute(query, [ username, user_id]);
+  }
+
+  // Метод для связывания Discord ID с существующим email-аккаунтом
+  static async linkDiscord(id, discordId) {
+    const db = await connectDB();
+    const query = 'UPDATE users SET discordId = ? WHERE id = ?';
+    await db.execute(query, [discordId, id]);
+  }
+
+  // Аналог matchPassword
+  static async matchPassword(enteredPassword, hashedPassword) {
+    return await bcrypt.compare(enteredPassword, hashedPassword);
+  }
+}
+
+module.exports = User;
