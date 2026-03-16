@@ -6,10 +6,22 @@ const connectDB = require('./config/db'); // Импортируем функци
 const config = require('./config'); // Импортируем основные конфигурации
 const { notFound, errorHandler } = require('./middleware/errorHandler'); // Импортируем обработчики ошибок
 
+//Настройка .env
+const path = require('path'); // Для работы с путями
+// Определяем, какой файл загружать (по умолчанию development)
+const envFile = process.env.NODE_ENV === 'production' 
+  ? '.env.production' 
+  : '.env.development';
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
+console.log(`Загружен конфиг из: ${envFile}`);
+console.log(`API URL: ${process.env.VITE_API_URL}`); // Проверка
+
+
 // Модули для HTTPS
 const https = require('https');
 const fs = require('fs');
-const path = require('path'); // Для работы с путями
 
 // Импортируем маршруты
 
