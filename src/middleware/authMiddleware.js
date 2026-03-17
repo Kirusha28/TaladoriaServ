@@ -21,7 +21,7 @@ const protect = async (req, res, next) => {
               return res.status(401).json({ message: 'Неверная структура токена' });
             }
             // 2. Ищем пользователя
-            const userResult = await User.findByDiscordId(userId);
+            const userResult = await User.getUserById(userId);
 
             // 3. MySQL возвращает данные по-разному в зависимости от драйвера.
             // Если это массив строк, берем первую. Если объект — берем его.

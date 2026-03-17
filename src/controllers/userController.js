@@ -13,11 +13,29 @@ const getUserProfile = async (req, res) => {
     res.status(404).json({ message: 'Пользователь не найден' });
   }
 };
-const getUserWithAchievements = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     // console.log('user',user_id)
-    const stats = await User.getUserWithAchievements(user_id);
+    const stats = await User.getUserById(user_id);
+    
+    if (stats) {
+      res.json(stats); 
+    } else {
+      res.status(500).json({ message: 'Я не математик' });
+    }
+  } catch (error) {
+     res.status(500).json({ message: 'Я не могу понять' });
+  }
+  
+};
+const getAllUsers = async (req, res) => {
+  try {
+    console.log('req.limit',parseInt(req.query.limit) || 10)
+    const limit = parseInt(req.query.limit) || 10;
+    // const limit = parseInt(req.query.limit) || 10;
+    // console.log('user',user_id)
+    const stats = await User.getAllUsers(limit);
     
     if (stats) {
       res.json(stats); 
@@ -32,5 +50,6 @@ const getUserWithAchievements = async (req, res) => {
 
 module.exports = {
   getUserProfile,
-  getUserWithAchievements
+  getUserById,
+  getAllUsers
 };
