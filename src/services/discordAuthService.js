@@ -7,6 +7,7 @@ const User = require('../models/User');
 // Формат: http://user:password@proxy-ip:port
 const proxyAgent = new SocksProxyAgent(process.env.PROXY_URL);
 
+
 const discordStrategy = new DiscordStrategy(
     {
       clientID: process.env.DISCORD_CLIENT_ID,
@@ -19,7 +20,7 @@ const discordStrategy = new DiscordStrategy(
       console.log("ID пользователя Discord:", profile.id);
       try {
         // 1. Сначала ищем по Discord ID
-        let user = await User.getUserById(profile.user_id);
+        let user = await User.getUserById(profile.id);
 
         if (user) {
             console.log(`[DiscordAuth] Пользователь найден: ${user.nickname || user.username}`);

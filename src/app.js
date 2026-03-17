@@ -1,8 +1,6 @@
 const express = require("express"); // Импортируем Express
-const dotenv = require("dotenv"); // Импортируем dotenv для загрузки переменных окружения
 const cors = require("cors"); // Импортируем cors для разрешения кросс-доменных запросов
 const passport = require("passport"); // Импортируем Passport
-const connectDB = require("./config/db"); // Импортируем функцию подключения к базе данных
 const config = require("./config"); // Импортируем основные конфигурации
 const { notFound, errorHandler } = require("./middleware/errorHandler"); // Импортируем обработчики ошибок
 
@@ -10,11 +8,11 @@ const { notFound, errorHandler } = require("./middleware/errorHandler"); // Им
 const path = require("path"); // Для работы с путями
 // Определяем, какой файл загружать (по умолчанию development)
 const envFile = ".env.production";
-
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+require('dotenv').config({ path: require('path').join(__dirname, '../'+envFile) });
 
 console.log(`Загружен конфиг из: ${envFile}`);
 console.log(`API URL: ${process.env.FRONTEND_URL}`); // Проверка
+
 
 // Модули для HTTPS
 const https = require("https");
@@ -27,7 +25,6 @@ const userRoutes = require("./routes/user");
 const globalRoutes = require("./routes/global");
 
 // Загружаем переменные окружения
-dotenv.config();
 
 // Подключаемся к базе данных
 // connectDB();
