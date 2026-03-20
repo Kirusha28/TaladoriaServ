@@ -45,10 +45,21 @@ const getTotalOnline = async (req, res) => {
   }
 };
 
+const getTreeData = async (req, res) => {
+  const stats = await Global.getTreeData();
+  
+  if (stats) {
+    res.json({ treeData: stats }); 
+  } else {
+    res.status(500).json({ message: 'Я не знаю кто чей родственник' });
+  }
+};
+
 
 module.exports = {
   getTotalMinutes,
   getTotalUsersCount,
   getTotalAchievements,
   getTotalOnline,
+  getTreeData
 };

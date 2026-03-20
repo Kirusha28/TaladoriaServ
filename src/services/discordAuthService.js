@@ -38,8 +38,9 @@ const discordStrategy = new DiscordStrategy(
     }
   )
 
-if (discordStrategy._oauth2 && discordStrategy._oauth2.setAgent && !process.env.FRONTEND_URL) {
+if (discordStrategy._oauth2 && discordStrategy._oauth2.setAgent && !process.env.DEV_MODE) {
     discordStrategy._oauth2.setAgent(proxyAgent);
+    console.log("Прокси установлен!");
 }
 
 // 4. И только теперь регистрируем стратегию в паспорт

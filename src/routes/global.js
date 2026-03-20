@@ -6,6 +6,7 @@ const {
 	getTotalUsersCount,
 	getTotalAchievements,
 	getTotalOnline,
+	getTreeData,
 } = require("../controllers/globalController");
 
 const router = express.Router(); // Создаем новый маршрутизатор Express
@@ -15,5 +16,6 @@ router.get("/getTotalMinutes", protect, getTotalMinutes);
 router.get("/getTotalUsersCount", protect, getTotalUsersCount);
 router.get("/getTotalAchievements", protect, getTotalAchievements);
 router.get("/getTotalOnline", protect, getTotalOnline);
+router.get("/getTreeData", protect, getTreeData);
 
 module.exports = router; // Экспортируем маршрутизатор
