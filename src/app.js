@@ -8,11 +8,12 @@ const { notFound, errorHandler } = require("./middleware/errorHandler"); // Им
 const path = require("path"); // Для работы с путями
 // Определяем, какой файл загружать (по умолчанию development)
 const envFile = ".env.production";
-require('dotenv').config({ path: require('path').join(__dirname, '../'+envFile) });
+require("dotenv").config({
+	path: require("path").join(__dirname, "../" + envFile),
+});
 
 console.log(`Загружен конфиг из: ${envFile}`);
 console.log(`API URL: ${process.env.FRONTEND_URL}`); // Проверка
-
 
 // Модули для HTTPS
 const https = require("https");
@@ -31,13 +32,18 @@ const globalRoutes = require("./routes/global");
 pool = require("./config/db");
 async function checkDB() {
 	try {
-		const [rows] = await pool.query('SELECT 1');
-		console.log('Database check: OK');
+		const [rows] = await pool.query("SELECT 1");
+		console.log("Database check: OK");
 	} catch (err) {
-		console.error('Database check: FAILED', err);
+		console.error("Database check: FAILED", err);
 	}
 }
 checkDB();
+
+//SOCKETS FOR GAME
+const http = require("http"); // Добавляем встроенный модуль http
+const { Server } = require("socket.io"); // Импортируем Socket.io
+const gameSocketService = require("./services/gameSocketService"); // Наш будущий сервис игры
 
 const app = express(); // Создаем экземпляр приложения Express
 
@@ -99,8 +105,24 @@ const sslOptions = {
 //   res.end();
 // }).listen(80); // Или любой другой порт для HTTP
 
+// 1. Создаем HTTP сервер на базе Express
+const httpServer = http.createServer(app);
+console.log("Сервер создан", process.env.FRONTEND_GAME_URL);
+// 2. Инициализируем Socket.io
+const io = new Server(httpServer, {
+	cors: {
+		origin: process.env.SOCKET_URL || "*", // Убедись, что фронтенд имеет доступ
+		methods: ["GET", "POST"],
+		credentials: true, // Добавь это, если используешь сессии/куки
+	},
+});
+
+// 3. Подключаем игровую логику
+gameSocketService(io);
+
 // Запускаем сервер
 const PORT = config.port;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
 	console.log(`Сервер работает в режиме ${config.env} на порту ${PORT}`);
+	console.log(`WebSocket сервер для игры запущен.`);
 });

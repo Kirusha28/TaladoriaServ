@@ -34,6 +34,15 @@ const getTotalAchievements = async (req, res) => {
     res.status(500).json({ message: 'Я не математик' });
   }
 };
+const getAllAchievements = async (req, res) => {
+  const stats = await Global.getAllAchievements();
+  
+  if (stats) {
+    res.json({ achievements: stats }); 
+  } else {
+    res.status(500).json({ message: 'Я не математик' });
+  }
+};
 
 const getTotalOnline = async (req, res) => {
   const stats = await Global.getTotalOnline();
@@ -60,6 +69,7 @@ module.exports = {
   getTotalMinutes,
   getTotalUsersCount,
   getTotalAchievements,
+  getAllAchievements,
   getTotalOnline,
   getTreeData
 };

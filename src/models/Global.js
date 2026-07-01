@@ -42,6 +42,51 @@ class Global {
     }
   }
 
+  static async getAllAchievements() {
+    try {
+      const query = `
+        SELECT 
+          a.id,
+          a.name,
+          a.description,
+          a.imgPath,
+          a.creatingDate,
+          IF(s.id IS NOT NULL, JSON_OBJECT(
+              'id', s.id,
+              'name', s.name,
+              'color', s.color,
+              'description', s.description
+          ), NULL) AS status,
+          COUNT(DISTINCT ua.user_id) AS usersCount
+        FROM achievements a
+        LEFT JOIN achievement_status s ON a.statusId = s.id
+        LEFT JOIN user_achievements ua ON a.id = ua.achievement_id
+        GROUP BY a.id, a.name, a.description, a.imgPath, a.creatingDate, s.id, s.name, s.color, s.description
+        ORDER BY a.creatingDate DESC
+      `;
+
+      const [rows] = await db.execute(query);
+
+      const achievements = rows.map(row => {
+        if (typeof row.status === 'string') {
+          try {
+            row.status = JSON.parse(row.status);
+          } catch (e) {
+            row.status = null;
+          }
+        }
+        // Приводим к числу на случай если база вернет строку
+        row.usersCount = Number(row.usersCount) || 0;
+        return row;
+      });
+
+      return achievements;
+    } catch (error) {
+      console.error('Ошибка при получении всех достижений:', error);
+      throw error;
+    }
+  }
+
   static async getTotalOnline() {
     try {
       // const db = await connectDB();
@@ -57,7 +102,6 @@ class Global {
 
   static async getTreeData() {
     try {
-        // 1. Получаем всех пользователей и их роли для формирования описания
         const query = `
             SELECT 
                 u.user_id,
@@ -75,16 +119,36 @@ class Global {
 
         const [rows] = await db.query(query);
 
-        // Вспомогательный объект для быстрого поиска узлов по ID
         const nodesMap = {};
-        // Результирующий объект в вашем формате
         const resultTree = {};
 
-        // 2. Первый проход: создаем базовые объекты узлов
-        rows?.filter((row) => !(row.parent == null)).forEach(row => {
+        // 1. Первый проход: Создаем карту узлов
+        rows?.filter((row) => row.parent != null).forEach(row => {
             const userId = String(row.user_id);
+            // Приводим parent к строке и убираем лишние пробелы для корректного парсинга
+            const rawParent = String(row.parent).trim();
             
-            // Формируем описание из ролей
+            let parsedParentId = null;
+            let parsedStartLevel = null;
+
+            // Логика разбора значения parent
+            if (rawParent.includes(',')) {
+                // Формат "parentId,level" (например, "381574598770163723,2")
+                const parts = rawParent.split(',');
+                parsedParentId = parts[0].trim();
+                parsedStartLevel = Number(parts[1].trim());
+            } else {
+                // Формат "число" (либо ID, либо уровень)
+                const numValue = Number(rawParent);
+                if (!isNaN(numValue)) {
+                    if (numValue < 99) {
+                        parsedStartLevel = numValue; // Это уровень
+                    } else {
+                        parsedParentId = rawParent; // Это ID родителя
+                    }
+                }
+            }
+
             const roles = [row.age_name, row.inst_name, row.fac_name].filter(Boolean);
             const description = roles.length > 0 ? roles.join(', ') : "Начинающий герой";
 
@@ -93,46 +157,48 @@ class Global {
                 name: row.nickname,
                 desc: description,
                 status: "unlocked",
-                // status: row.status === 1 ? "unlocked" : "locked",
                 shape: "circularImage",
-                parent: row.parent ? String(row.parent) : null,
-                children: [] // Массив для ID детей
+                parentId: parsedParentId,
+                startLevel: parsedStartLevel,
+                children: []
             };
         });
 
-        // console.log(nodesMap);
-
-        // 3. Второй проход: связываем детей с родителями
+        // 2. Второй проход: Связываем детей с реальными родителями
         Object.values(nodesMap).forEach(node => {
-            if (node.parent && nodesMap[node.parent]) {
-                nodesMap[node.parent].children.push(node.id);
+            if (node.parentId && nodesMap[node.parentId]) {
+                nodesMap[node.parentId].children.push(node.id);
             }
         });
 
-        // 4. Функция для расчета уровня (level) и финализации объекта
-        // Level нужен для формирования пути к картинке: ./assets/owls/ID_LEVEL.png
-        const calculateLevel = (nodeId, currentLevel = 1) => {
+        // 3. Рекурсивная функция для расчета уровня и путей
+        const finalizeNode = (nodeId, currentLevel) => {
             const node = nodesMap[nodeId];
             if (!node) return;
 
-            // Формируем финальный путь к картинке согласно вашему требованию
+            // Если у узла явно задан уровень (например, через запятую или как корень),
+            // он в приоритете над уровнем, который передает родитель
+            const actualLevel = node.startLevel !== null ? node.startLevel : currentLevel;
+
+            node.level = actualLevel;
             node.image = `./assets/owls/${node.id}.webp`;
-            // node.image = `./assets/owls/${node.id}_${currentLevel}.png`;
-            node.level = currentLevel;
 
-            // Удаляем временное поле parent, чтобы соответствовать вашему формату
-            const { parent, ...finalNode } = node;
-            resultTree[nodeId] = finalNode;
+            // Убираем технические поля перед добавлением в финальное дерево
+            const { parentId, startLevel, ...finalNodeData } = node;
+            resultTree[nodeId] = finalNodeData;
 
-            // Рекурсивно обрабатываем детей, повышая уровень
-            node.children.forEach(childId => calculateLevel(childId, currentLevel + 1));
+            // Рекурсия для детей. Уровень детей будет +1 от текущего (actualLevel)
+            node.children.forEach(childId => finalizeNode(childId, actualLevel + 1));
         };
 
-        // Находим корневые узлы (у которых нет родителя или родитель не найден в списке)
-        // и запускаем расчет от них
+        // 4. Запуск обработки
         Object.values(nodesMap).forEach(node => {
-            if (!node.parent || node.parent === "0" || !nodesMap[node.parent]) {
-                calculateLevel(node.id, 1);
+            // Узел считается корневым (точкой входа), если:
+            // - У него нет родителя
+            // - Или его реальный родитель почему-то отсутствует в базе
+            if (!node.parentId || !nodesMap[node.parentId]) {
+                const levelToStart = node.startLevel !== null ? node.startLevel : 1;
+                finalizeNode(node.id, levelToStart);
             }
         });
 
