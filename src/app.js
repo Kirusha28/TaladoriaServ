@@ -1,18 +1,12 @@
+require('./config/env');
+
 const express = require("express"); // Импортируем Express
 const cors = require("cors"); // Импортируем cors для разрешения кросс-доменных запросов
 const passport = require("passport"); // Импортируем Passport
 const config = require("./config"); // Импортируем основные конфигурации
 const { notFound, errorHandler } = require("./middleware/errorHandler"); // Импортируем обработчики ошибок
-
-//Настройка .env
 const path = require("path"); // Для работы с путями
-// Определяем, какой файл загружать (по умолчанию development)
-const envFile = ".env.production";
-require("dotenv").config({
-	path: require("path").join(__dirname, "../" + envFile),
-});
 
-console.log(`Загружен конфиг из: ${envFile}`);
 console.log(`API URL: ${process.env.FRONTEND_URL}`); // Проверка
 
 // Модули для HTTPS

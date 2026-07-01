@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('./env');
 
 // Экспортируем конфигурацию для различных методов аутентификации
 module.exports = {
